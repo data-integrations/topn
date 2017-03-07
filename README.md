@@ -1,4 +1,4 @@
-# Example Hydrator Transform
+# Top-N Aggregator Plugin
 
 This is an example plugin for [Hydrator](http://cask.co/products/hydrator/). 
  
@@ -6,7 +6,7 @@ It is fully free and fully open source under the Apache 2.0 license.
 
 ## Documentation
 
-This is a good starting point, but for more information about developing Hydrator plugins, you can check out the [Hydrator Docs](http://docs.cask.co/cdap/current/en/hydrator-manual/developing-plugins/index.html).
+This is a plugin which retrieves the top N records sorted by the given field. For more information about developing Hydrator plugins, you can check out the [Hydrator Docs](http://docs.cask.co/cdap/current/en/hydrator-manual/developing-plugins/index.html).
 
 ## Need Help?
 
