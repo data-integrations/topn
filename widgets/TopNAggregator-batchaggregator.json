@@ -11,15 +11,7 @@
           "widget-type": "textbox",
           "label": "Field Name",
           "name": "topField",
-          "description" : "The field by which top records are sorted",
-          "plugin-function": {
-            "method": "POST",
-            "widget": "outputSchema",
-            "output-property": "schema",
-            "plugin-method": "outputSchema",
-            "required-fields": ["topField"],
-            "missing-required-fields-message": "'Field Name' is required to fetch schema."
-          }
+          "description" : "The field by which top records are sorted"
         },
         {
           "widget-type": "textbox",

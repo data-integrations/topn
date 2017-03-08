@@ -6,16 +6,10 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.annotations.VisibleForTesting;
 
-import javax.annotation.Nullable;
-
 /**
  * Config for top N of plugins.
  */
 public class TopNConfig extends PluginConfig {
-  @Nullable
-  @Description("Number of partitions to use when aggregating. If not specified, the execution framework " +
-    "will decide how many to use.")
-  protected Integer numPartitions;
 
   @Name("topField")
   @Description("The field by which top results are sorted")
