@@ -15,7 +15,7 @@ Plugin Configuration
 
 | Configuration | Required | Default | Description |
 | :------------ | :------: | :----- | :---------- |
-| **Field Name** | **Y** | N/A | This configuration specifies the name of the field by which top results are sorted. Must be an existing field from the input schema.
+| **Field Name** | **Y** | N/A | This configuration specifies the name of the field by which top results are sorted. It must be an existing field from the input schema with one of the following data types: int, long, float, or double.
 | **Results Number** | **Y** | N/A | Specifies the number of results, i.e. the "N" in "top N". It must be a positive integer.
 
 
