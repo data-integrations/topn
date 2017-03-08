@@ -9,13 +9,13 @@
       "properties": [
         {
           "widget-type": "textbox",
-          "label": "The field by which top records are sorted",
+          "label": "Field Name",
           "name": "topField",
           "description" : "The field by which top records are sorted"
         },
         {
           "widget-type": "textbox",
-          "label": "Max number of top records in result",
+          "label": "Results Number",
           "name": "topSize",
           "description" : "The maximum number of top records sorted by topField in result"
         }

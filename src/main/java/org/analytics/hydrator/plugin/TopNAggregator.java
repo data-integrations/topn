@@ -121,25 +121,15 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
     // dequeue from priority queue
     while (topRecords.size() > 0) {
       StructuredRecord record = topRecords.poll();
-      String currentName = record.get("name");
-      int age = record.get("age");
-      LOG.trace("Top record with age {}:{}", currentName, age);
       emitter.emit(record);
     }
   }
 
   private void enqueueRecord(StructuredRecord record, Queue<StructuredRecord> topRecords) {
-    String currentName = record.get("name");
-    int age = record.get("age");
-    LOG.trace("Enqueue record with age {}:{}", currentName, age);
     if (record.get(topField) == null) {
       return;
     }
     topRecords.offer(record);
-    record = topRecords.peek();
-    currentName = record.get("name");
-    age = record.get("age");
-    LOG.trace("Current top record with age {}:{}", currentName, age);
   }
 
   @Path("outputSchema")
