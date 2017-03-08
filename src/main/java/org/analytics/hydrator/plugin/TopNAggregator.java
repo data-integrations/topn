@@ -27,11 +27,13 @@ import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
 import co.cask.cdap.etl.api.batch.BatchAggregatorContext;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import javax.ws.rs.Path;
 
 /**
@@ -41,10 +43,14 @@ import javax.ws.rs.Path;
 @Name("TopNAggregator")
 @Description("Get the top N results sorted by the given field")
 public class TopNAggregator extends BatchAggregator<StructuredRecord, StructuredRecord, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(TopNAggregator.class);
+
   private final Integer numPartitions;
   private final TopNConfig conf;
   private String topField;
   private int topSize;
+  private RecordComparator comparator;
+  private StructuredRecord constantTopField;
 
   public TopNAggregator(TopNConfig conf) {
     this.numPartitions = conf.numPartitions;
@@ -60,6 +66,7 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    topField = conf.getTopField();
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
     // if null, the input schema is unknown, or its multiple schemas.
@@ -67,7 +74,6 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
       stageConfigurer.setOutputSchema(null);
       return;
     }
-
     // otherwise, we have a constant input schema. Get the output schema and
     // propagate the schema, which is group by fields + aggregate fields
     stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, topField));
@@ -77,45 +83,63 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
   public void initialize(BatchRuntimeContext context) throws Exception {
     topField = conf.getTopField();
     topSize = conf.getTopSize();
+    // Initialize comparator and constantTopField according to fieldSchema type
   }
 
   @Override
   public void groupBy(StructuredRecord record, Emitter<StructuredRecord> emitter) throws Exception {
-    // app should provide some way to make some data calculated in configurePipeline available here.
-    // then we wouldn't have to calculate schema here
-    StructuredRecord.Builder builder = StructuredRecord.builder(getGroupKeySchema(record.getSchema()));
-    builder.set(topField, record.get(topField));
-    emitter.emit(builder.build());
+    if (constantTopField == null) {
+      initConstantTopField(record.getSchema().getField(topField));
+    }
+    // Emit with constant value for the topField so that all records are grouped by the same value to the same reducer
+    emitter.emit(constantTopField);
   }
 
   @Override
   public void aggregate(StructuredRecord groupKey, Iterator<StructuredRecord> iterator,
                         Emitter<StructuredRecord> emitter) throws Exception {
-
     if (!iterator.hasNext()) {
       return;
     }
-
     StructuredRecord firstVal = iterator.next();
-    Schema.Field inputField = firstVal.getSchema().getField(topField);
-    Schema fieldSchema = inputField == null ? null : inputField.getSchema();
-    // Get comparator according to fieldSchema type
-    RecordComparator comparator = getComparator(fieldSchema);
-    // Initialize priority queue in reverse order with size topSize
-    PriorityQueue<StructuredRecord> topRecords = new PriorityQueue<>(topSize, Collections.reverseOrder(comparator));
+    // Initialize comparator according to fieldSchema type
+    initComparator(firstVal.getSchema().getField(topField));
+
+    // Initialize priority queue in with size topSize
+    PriorityQueue<StructuredRecord> topRecords = new PriorityQueue<>(topSize, comparator);
+    LOG.debug("Constructing queue with size {}", topSize);
+    enqueueRecord(firstVal, topRecords);
     while (iterator.hasNext()) {
       // enqueue non-null
-      StructuredRecord record = iterator.next();
-      if (record.get(topField) == null) {
-        continue;
+      enqueueRecord(iterator.next(), topRecords);
+      if (topRecords.size() > topSize) {
+        // Remove head record if the size of the queue exceeds topSize
+        topRecords.poll();
       }
-      topRecords.offer(record);
     }
 
     // dequeue from priority queue
     while (topRecords.size() > 0) {
-      emitter.emit(topRecords.poll());
+      StructuredRecord record = topRecords.poll();
+      String currentName = record.get("name");
+      int age = record.get("age");
+      LOG.trace("Top record with age {}:{}", currentName, age);
+      emitter.emit(record);
     }
+  }
+
+  private void enqueueRecord(StructuredRecord record, Queue<StructuredRecord> topRecords) {
+    String currentName = record.get("name");
+    int age = record.get("age");
+    LOG.trace("Enqueue record with age {}:{}", currentName, age);
+    if (record.get(topField) == null) {
+      return;
+    }
+    topRecords.offer(record);
+    record = topRecords.peek();
+    currentName = record.get("name");
+    age = record.get("age");
+    LOG.trace("Current top record with age {}:{}", currentName, age);
   }
 
   @Path("outputSchema")
@@ -134,9 +158,17 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
     return Schema.recordOf(inputSchema.getRecordName() + ".topn", field);
   }
 
-  private RecordComparator getComparator(Schema fieldSchema) {
+  private void initComparator(Schema.Field field) {
+    if (field == null) {
+      throw new IllegalArgumentException(String.format(
+        "Cannot sort by field '%s' because it does not exist in input schema %s",
+        topField, field));
+    }
+    Schema fieldSchema = field.getSchema();
+    StructuredRecord.Builder constantTopFieldBuilder = StructuredRecord.builder(Schema.recordOf("group.key.schema",
+                                                                                                field));
     if (fieldSchema == null) {
-      return new RecordComparator<Double>() {
+      comparator = new RecordComparator<Double>() {
 
         @Override
         Double getRecordVal(StructuredRecord record) {
@@ -149,13 +181,14 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
           return Double.compare(val1, val2);
         }
       };
+      return;
     }
 
     final boolean isNullable = fieldSchema.isNullable();
     Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
     switch (fieldType) {
       case INT:
-        return new RecordComparator<Integer>() {
+        comparator =  new RecordComparator<Integer>() {
 
           @Override
           Integer getRecordVal(StructuredRecord record) {
@@ -168,8 +201,9 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
             return Integer.compare(val1, val2);
           }
         };
+        return;
       case LONG:
-        return new RecordComparator<Long>() {
+        comparator =  new RecordComparator<Long>() {
 
           @Override
           Long getRecordVal(StructuredRecord record) {
@@ -182,8 +216,9 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
             return Long.compare(val1, val2);
           }
         };
+        return;
       case FLOAT:
-        return new RecordComparator<Float>() {
+        comparator = new RecordComparator<Float>() {
 
           @Override
           Float getRecordVal(StructuredRecord record) {
@@ -196,8 +231,9 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
             return Float.compare(val1, val2);
           }
         };
+        return;
       case DOUBLE:
-        return new RecordComparator<Double>() {
+        comparator = new RecordComparator<Double>() {
 
           @Override
           Double getRecordVal(StructuredRecord record) {
@@ -210,6 +246,42 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
             return Double.compare(val1, val2);
           }
         };
+        return;
+      default:
+        throw new IllegalArgumentException(String.format("Field '%s' is of unsupported non-numeric type '%s'. ",
+                                                         topField, fieldType));
+    }
+  }
+
+  private void initConstantTopField(Schema.Field field) {
+    if (field == null) {
+      throw new IllegalArgumentException(String.format(
+        "Cannot sort by field '%s' because it does not exist in input schema %s",
+        topField, field));
+    }
+    Schema fieldSchema = field.getSchema();
+    StructuredRecord.Builder constantTopFieldBuilder = StructuredRecord.builder(Schema.recordOf("group.key.schema",
+                                                                                                field));
+    if (fieldSchema == null) {
+      constantTopField = constantTopFieldBuilder.set(topField, 1.0).build();
+      return;
+    }
+
+    final boolean isNullable = fieldSchema.isNullable();
+    Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    switch (fieldType) {
+      case INT:
+        constantTopField = constantTopFieldBuilder.set(topField, 1).build();
+        return;
+      case LONG:
+        constantTopField = constantTopFieldBuilder.set(topField, 1L).build();
+        return;
+      case FLOAT:
+        constantTopField = constantTopFieldBuilder.set(topField, 1.0).build();
+      return;
+      case DOUBLE:
+        constantTopField = constantTopFieldBuilder.set(topField, 1.0).build();
+        return;
       default:
         throw new IllegalArgumentException(String.format("Field '%s' is of unsupported non-numeric type '%s'. ",
                                                          topField, fieldType));
@@ -228,16 +300,6 @@ public class TopNAggregator extends BatchAggregator<StructuredRecord, Structured
       return compareValues(val1, val2);
     }
 
-  }
-
-  private Schema getGroupKeySchema(Schema inputSchema) {
-      Schema.Field fieldSchema = inputSchema.getField(topField);
-    if (fieldSchema == null) {
-      throw new IllegalArgumentException(String.format(
-        "Cannot group by field '%s' because it does not exist in input schema %s",
-        topField, inputSchema));
-    }
-    return Schema.recordOf("group.key.schema", fieldSchema);
   }
 
   /**

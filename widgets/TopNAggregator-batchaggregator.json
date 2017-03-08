@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "spec-version": "1.0",
+    "label": "TopN Aggregator"
+  },
+  "configuration-groups": [
+    {
+      "label": "Transform Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "The field by which top records are sorted",
+          "name": "topField",
+          "description" : "The field by which top records are sorted"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Max number of top records in result",
+          "name": "topSize",
+          "description" : "The maximum number of top records sorted by topField in result"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

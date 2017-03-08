@@ -1,6 +1,8 @@
 package org.analytics.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
+import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -15,10 +17,14 @@ public class TopNConfig extends PluginConfig {
     "will decide how many to use.")
   protected Integer numPartitions;
 
-  @Description("The field by which all records are sorted")
+  @Name("topField")
+  @Description("The field by which top records are sorted")
+  @Macro
   private final String topField;
 
-  @Description("The maximum number of top rows in the result sorted by topField")
+  @Name("topSize")
+  @Description("The maximum number of top records sorted by topField in result")
+  @Macro
   private final int topSize;
 
   public TopNConfig() {

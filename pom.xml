@@ -19,11 +19,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.analytics.hydrator.plugins</groupId>
-  <artifactId>analytics.topn</artifactId>
+  <artifactId>topn</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
 
-  <name>Top N</name>
+  <name>TopN</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -39,13 +39,12 @@
     <!-- These are the application template artifacts that this plugin will be available for. -->
     <app.parents>
       system:cdap-etl-batch,
-      system:cdap-etl-realtime,
       system:cdap-data-pipeline,
       system:cdap-data-streams
     </app.parents>
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
-    <!-- This is the list of packages where your code exists. You can add multiple and separated with a ; or use wildcards *. -->
+    <!-- This is the list of packages where your codmve exists. You can add multiple and separated with a ; or use wildcards *. -->
     <exported-packages>org.analytics.hydrator.plugin*</exported-packages>
   </properties>
 
