@@ -1,18 +1,30 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Analytics Top-N Plugin
-===================
+==========
 
 CDAP Plugin for getting top N rows sorted by a given field.
 
-* [Top-N Plugin](docs/TopNAggregator-batchaggregator.md)
+Usage Notes
+-----------
+
+This plugin is configured to pull rows from a source and keep the top N rows sorted by a given field.
+
+Plugin Configuration
+---------------------
+
+| Configuration | Required | Default | Description |
+| :------------ | :------: | :----- | :---------- |
+| **Field Name** | **Y** | N/A | This configuration specifies the name of the field by which top results are sorted. Must be an existing field from the input schema.
+| **Results Number** | **Y** | N/A | Specifies the number of results, i.e. the "N" in "top N". It must be a positive integer.
+
 
 Build
 -----
 To build this plugin:
 
 ```
-   mvn clean package
+   mvn clean package -DskipTests
 ```    
 
 The build will create a .jar and .json file under the ``target`` directory.
@@ -61,4 +73,4 @@ and limitations under the License.
 Cask is a trademark of Cask Data, Inc. All rights reserved.
 
 Apache, Apache HBase, and HBase are trademarks of The Apache Software Foundation. Used with
-permission. No endorsement by The Apache Software Foundation is implied by the use of these marks. 
+permission. No endorsement by The Apache Software Foundation is implied by the use of these marks.    

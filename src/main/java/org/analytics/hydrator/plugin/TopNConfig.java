@@ -18,7 +18,7 @@ public class TopNConfig extends PluginConfig {
   protected Integer numPartitions;
 
   @Name("topField")
-  @Description("The field by which top records are sorted")
+  @Description("The field by which top results are sorted")
   @Macro
   private final String topField;
 
