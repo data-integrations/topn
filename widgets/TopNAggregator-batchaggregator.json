@@ -18,6 +18,19 @@
           "label": "Results Number",
           "name": "topSize",
           "description" : "The maximum number of top records sorted by topField in result"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Ignore NULL Field",
+          "name": "ignoreNull",
+          "description": "Whether to ignore records with null in the field by which records are sorted. Default is 'false' to treat null as smallest value.",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
         }
       ]
     }

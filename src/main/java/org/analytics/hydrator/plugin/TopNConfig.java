@@ -21,15 +21,23 @@ public class TopNConfig extends PluginConfig {
   @Macro
   private final int topSize;
 
+  @Name("ignoreNull")
+  @Description("Set to 'true' to ignore records with null value in the field to sort by. Default is 'false' to treat" +
+    "null value as smallest value")
+  @Macro
+  private boolean ignoreNull;
+
   public TopNConfig() {
     this.topField = "";
     this.topSize = 0;
+    this.ignoreNull = false;
   }
 
   @VisibleForTesting
-  TopNConfig(String topField, int topSize) {
+  TopNConfig(String topField, int topSize, boolean ignoreNull) {
     this.topField = topField;
     this.topSize = topSize;
+    this.ignoreNull = ignoreNull;
   }
 
   String getTopField() {
@@ -38,5 +46,9 @@ public class TopNConfig extends PluginConfig {
 
   int getTopSize() {
     return topSize;
+  }
+
+  boolean getIgnoreNull() {
+    return ignoreNull;
   }
 }

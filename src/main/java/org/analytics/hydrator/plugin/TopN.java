@@ -33,22 +33,24 @@ import org.slf4j.LoggerFactory;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Queue;
+import javax.annotation.Nullable;
 
 /**
  * Top N aggregator.
  */
 @Plugin(type = BatchAggregator.PLUGIN_TYPE)
-@Name("TopNAggregator")
+@Name("TopN")
 @Description("Get the top N results sorted by the given field")
-public class TopNAggregator extends BatchAggregator<Boolean, StructuredRecord, StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(TopNAggregator.class);
+public class TopN extends BatchAggregator<Boolean, StructuredRecord, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(TopN.class);
 
   private final TopNConfig conf;
   private String topField;
   private int topSize;
+  private boolean ignoreNull;
   private ReverseOrderComparator reverseOrderComparator;
 
-  public TopNAggregator(TopNConfig conf) {
+  public TopN(TopNConfig conf) {
     this.conf = conf;
   }
 
@@ -72,7 +74,7 @@ public class TopNAggregator extends BatchAggregator<Boolean, StructuredRecord, S
   public void initialize(BatchRuntimeContext context) throws Exception {
     topField = conf.getTopField();
     topSize = conf.getTopSize();
-    // Initialize reverseOrderComparator and constantTopField according to fieldSchema type
+    ignoreNull = conf.getIgnoreNull();
   }
 
   @Override
@@ -112,7 +114,7 @@ public class TopNAggregator extends BatchAggregator<Boolean, StructuredRecord, S
   }
 
   private void enqueueRecord(StructuredRecord record, Queue<StructuredRecord> topRecords) {
-    if (record.get(topField) == null) {
+    if (ignoreNull && record.get(topField) == null) {
       return;
     }
     topRecords.offer(record);
@@ -128,7 +130,7 @@ public class TopNAggregator extends BatchAggregator<Boolean, StructuredRecord, S
     if (field == null) {
       throw new IllegalArgumentException(String.format(
         "Cannot sort by field '%s' because it does not exist in input schema %s",
-        topField, field));
+        topField, inputSchema));
     }
     Schema fieldSchema = field.getSchema();
     Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
@@ -146,15 +148,14 @@ public class TopNAggregator extends BatchAggregator<Boolean, StructuredRecord, S
    */
   private void initComparator(Schema.Field field) {
     if (field == null) {
-      throw new IllegalArgumentException(String.format(
-        "Cannot sort by field '%s' because it does not exist in input schema %s",
-        topField, field));
+      throw new IllegalArgumentException(
+        String.format("Cannot sort by field '%s' because it does not exist in input schema", topField));
     }
     Schema fieldSchema = field.getSchema();
     Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
     switch (fieldType) {
       case INT:
-        reverseOrderComparator =  new ReverseOrderComparator<Integer>() {
+        reverseOrderComparator = new ReverseOrderComparator<Integer>() {
 
           @Override
           int compareValues(Integer val1, Integer val2) {
@@ -163,7 +164,7 @@ public class TopNAggregator extends BatchAggregator<Boolean, StructuredRecord, S
         };
         return;
       case LONG:
-        reverseOrderComparator =  new ReverseOrderComparator<Long>() {
+        reverseOrderComparator = new ReverseOrderComparator<Long>() {
 
           @Override
           int compareValues(Long val1, Long val2) {
@@ -197,18 +198,20 @@ public class TopNAggregator extends BatchAggregator<Boolean, StructuredRecord, S
   }
 
   /**
-   * An abstract reverse order comparator of StructuredRecord
+   * An abstract reverse order comparator of StructuredRecord to be passed in a priority queue
    *
    * @param <T> the type of the StructuredRecord field to compare StructuredRecord with
    */
   private abstract class ReverseOrderComparator<T> implements Comparator<StructuredRecord> {
 
+    @Nullable
     T getRecordVal(StructuredRecord record) {
       return record.get(topField);
     }
 
     /**
      * Helper method to provide the original order of {@code val1} and {@code val2}
+     *
      * @param val1 the first value of type {@code T} to be compared.
      * @param val2 the second value of type {@code T} to be compared.
      * @return a negative integer, zero, or a positive integer as the
@@ -217,10 +220,27 @@ public class TopNAggregator extends BatchAggregator<Boolean, StructuredRecord, S
      */
     abstract int compareValues(T val1, T val2);
 
+    /**
+     * Compares a given field in records in reverse order. Null value in the given field is treated as smallest value
+     *
+     * @param record1 the existing record in the queue
+     * @param record2 the incoming new record to be inserted
+     * @return a positive integer, zero, or a negative integer as the
+     *         first argument is less than, equal to, or greater than the
+     *         second.
+     */
     @Override
     public int compare(StructuredRecord record1, StructuredRecord record2) {
       T val1 = getRecordVal(record1);
+      // record1 is smaller than any given record2 if val1 is null
+      if (val1 == null) {
+        return 1;
+      }
+      // record2 is smaller than any given record2 if val1 is null
       T val2 = getRecordVal(record2);
+      if (val2 == null) {
+        return -1;
+      }
       // Reverse the order of val1 and val2 when calling compareValues
       return compareValues(val2, val1);
     }

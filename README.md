@@ -5,7 +5,7 @@ Analytics Top-N Plugin
 
 CDAP Plugin for getting top N rows sorted by a given field.
 
-* [Top-N Plugin](docs/TopNAggregator-batchaggregator.md)
+* [Top-N Plugin](docs/TopN-batchaggregator.md)
 
 Build
 -----

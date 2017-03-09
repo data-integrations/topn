@@ -16,8 +16,8 @@
 package org.analytics.hydrator.plugin;
 
 /**
- * Tests for TopNAggregator
+ * Tests for TopN
  */
-public class TopNAggregatorTest {
+public class TopNTest {
 
 }
