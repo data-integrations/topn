@@ -14,7 +14,7 @@ Properties
 
 **topSize:** Maximum number of rows in the result. It must be a positive integer.
 
-**ignoreNull:** Set to 'true' to ignore rows with null value in the field to sort by. Default is 'false' to treat null value as smallest value.
+**ignoreNull:** Whether to ignore records with null in the field by which records are sorted. Defaults to 'false' to treat null as smallest value.
 
 Example
 -------
@@ -48,7 +48,7 @@ The output record will be:
     +================+
     | dave   |   6   |
     | bob    |   1   |
-    | eve    |       |
+    | alice  |       |
     +================+
 
 If "ignoreNull" property is set to 'true' to ignore rows with NULL values in age field, the output record will be:

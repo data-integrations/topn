@@ -232,11 +232,11 @@ public class TopN extends BatchAggregator<Boolean, StructuredRecord, StructuredR
     @Override
     public int compare(StructuredRecord record1, StructuredRecord record2) {
       T val1 = getRecordVal(record1);
-      // record1 is smaller than any given record2 if val1 is null
+      // record1 is smaller than any record if val1 is null
       if (val1 == null) {
         return 1;
       }
-      // record2 is smaller than any given record2 if val1 is null
+      // record2 is smaller than any record if val2 is null
       T val2 = getRecordVal(record2);
       if (val2 == null) {
         return -1;

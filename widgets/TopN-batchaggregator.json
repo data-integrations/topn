@@ -14,17 +14,17 @@
           "description" : "The field by which top records are sorted"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "number",
           "label": "Results Number",
           "name": "topSize",
           "description" : "The maximum number of top records sorted by topField in result"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "select",
           "label": "Ignore NULL Field",
           "name": "ignoreNull",
-          "description": "Whether to ignore records with null in the field by which records are sorted. Default is 'false' to treat null as smallest value.",
-          "widget-attributes": {
+          "description": "Whether to ignore records with null in the field by which records are sorted. Defaults to 'false' to treat null as smallest value.",
+          "widget-attributes" : {
             "values": [
               "true",
               "false"

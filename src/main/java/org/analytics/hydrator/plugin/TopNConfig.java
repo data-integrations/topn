@@ -14,18 +14,18 @@ public class TopNConfig extends PluginConfig {
   @Name("topField")
   @Description("The field by which top results are sorted")
   @Macro
-  private final String topField;
+  private String topField;
 
   @Name("topSize")
   @Description("The maximum number of top records sorted by topField in result")
   @Macro
-  private final int topSize;
+  private Integer topSize;
 
   @Name("ignoreNull")
   @Description("Set to 'true' to ignore records with null value in the field to sort by. Default is 'false' to treat" +
     "null value as smallest value")
   @Macro
-  private boolean ignoreNull;
+  private Boolean ignoreNull;
 
   public TopNConfig() {
     this.topField = "";
@@ -44,11 +44,11 @@ public class TopNConfig extends PluginConfig {
     return topField;
   }
 
-  int getTopSize() {
+  Integer getTopSize() {
     return topSize;
   }
 
-  boolean getIgnoreNull() {
+  Boolean getIgnoreNull() {
     return ignoreNull;
   }
 }
