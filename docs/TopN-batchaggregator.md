@@ -38,7 +38,6 @@ For example, suppose the plugin receives the input record:
     | alice  |       |
     | bob    |   1   |
     | dave   |   6   |
-    | eve    |       |
     +================+
 
 The output record will be:
