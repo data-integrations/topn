@@ -37,14 +37,11 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +59,6 @@ public class TopNTest extends HydratorTestBase {
   private static final String INPUT_TABLE = "input";
   private static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("app", "1.0.0");
   private static final ArtifactSummary APP_ARTIFACT = new ArtifactSummary("app", "1.0.0");
-  private static final Joiner COMMA_JOINER = Joiner.on(",");
   private static final Schema SCHEMA =
     Schema.recordOf("people",
                     Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
@@ -80,43 +76,31 @@ public class TopNTest extends HydratorTestBase {
     .set("kg", 44.4).set("cm", 444.4f).set("age", 44).build();
   private static final List<StructuredRecord> INPUT = ImmutableList.of(LEO, EVE, BOB_NULL_AGE, ALICE);
 
-  private static boolean initDone = false;
   private static boolean inputDone = false;
 
-  @Before
-  public void init() throws Exception {
-    if (initDone) {
-      return;
-    }
-
+  @BeforeClass
+  public static void init() throws Exception {
     setupBatchArtifacts(APP_ARTIFACT_ID, DataPipelineApp.class);
     // add TopN plugin
     addPluginArtifact(NamespaceId.DEFAULT.artifact("topn", "1.0.0"), APP_ARTIFACT_ID, TopN.class);
-    initDone = true;
   }
-
-  private void testTopN(String topField, String topSize, String ignoreNull,
-                        String sinkName, List<StructuredRecord> expected) throws Exception {
-    testSingleEngine(Engine.MAPREDUCE, topField, topSize, ignoreNull, sinkName + "MR", expected);
-    testSingleEngine(Engine.SPARK, topField, topSize, ignoreNull, sinkName + "SPARK", expected);
-  }
-
-  private void testSingleEngine(Engine engine, String topField, String topSize, String ignoreNull,
+  
+  private void testTopN(String topField, int topSize, boolean ignoreNull,
                                 String testName, List<StructuredRecord> expected) throws Exception {
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
-      .setEngine(engine)
+      .setEngine(Engine.MAPREDUCE)
       .addStage(new ETLStage("input", MockSource.getPlugin(INPUT_TABLE, SCHEMA)))
       .addStage(new ETLStage("topn", new ETLPlugin(TopN.PLUGIN_NAME, BatchAggregator.PLUGIN_TYPE,
                                                    ImmutableMap.of("topField", topField,
-                                                                   "topSize", topSize,
-                                                                   "ignoreNull", ignoreNull),
+                                                                   "topSize", Integer.toString(topSize),
+                                                                   "ignoreNull", Boolean.toString(ignoreNull)),
                                                    null)))
       .addStage(new ETLStage("output", MockSink.getPlugin(testName)))
       .addConnection("input", "topn")
       .addConnection("topn", "output")
       .build();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(APP_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app(testName+"App");
+    ApplicationId appId = NamespaceId.DEFAULT.app(testName + "App");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     // write records to input table for only once
     if (!inputDone) {
@@ -133,62 +117,47 @@ public class TopNTest extends HydratorTestBase {
     // check sink
     DataSetManager<Table> sinkManager = getDataset(testName);
     List<StructuredRecord> actual = MockSink.readOutput(sinkManager);
-
-    if (!Sets.newHashSet(expected).equals(Sets.newHashSet(actual))) {
-      Assert.fail("Actual result: " + recordListToString(actual)
-                    + " does not match expected: " + recordListToString(expected));
-    }
-  }
-
-  private String recordListToString(List<StructuredRecord> recordList) {
-    List<String> recordStringList = Lists.transform(recordList, new Function<StructuredRecord, String>() {
-      @Override
-      public String apply(final StructuredRecord record) {
-        return recordToString(record);
-      }
-    });
-    return "{" + COMMA_JOINER.join(recordStringList) + "}";
-  }
-
-  private String recordToString(final StructuredRecord record) {
-    List<String> fieldValues= Lists.transform(SCHEMA.getFields(), new Function<Schema.Field, String>() {
-      @Override
-      public String apply(Schema.Field field) {
-        return field.getName() + "=" + record.get(field.getName());
-      }
-    });
-    return "[" + COMMA_JOINER.join(fieldValues) + "]";
+    // Records from sink are out of order, so use Sets to compare
+    Assert.assertEquals(Sets.newHashSet(expected), Sets.newHashSet(actual));
   }
 
   @Test
-  public void test() throws Exception {
-    // Sort records with field "age" of int type and skip null
-    testTopN("age", "4", "true", "skipNull", ImmutableList.of(ALICE, EVE, LEO));
+  public void testAllNumericFields() throws Exception {
+    // Sort records with field "age" of int type and skip records with null value in field "age"
+    testTopN("age", 4, true, "skipNull", ImmutableList.of(ALICE, EVE, LEO));
 
-    // Sort records with field "age" of int type and keep null
-    testTopN("age", "4", "false", "keepNull", ImmutableList.of(ALICE, EVE, LEO, BOB_NULL_AGE));
+    // Sort records with field "age" of int type and keep records with null value in field "age"
+    testTopN("age", 4, false, "keepNull", ImmutableList.of(ALICE, EVE, LEO, BOB_NULL_AGE));
 
-    // topField with non-numeric type is invalid
-    try {
-      testTopN("name", "4", "false", "nonNumeric", new ArrayList<StructuredRecord>());
-      Assert.fail("topField with non-numeric type is not allowed and should throw IllegalStateException");
-    } catch (IllegalStateException e) {
-      // Expected to catch IllegalArgumentException because "name" field has String type
-    }
+    // Sort records with field "id" of long type
+    testTopN("id", 2, false, "largest", ImmutableList.of(ALICE, BOB_NULL_AGE));
 
+    // Sort records with field "kg" of double type
+    testTopN("kg", 2, false, "heaviest", ImmutableList.of(ALICE, BOB_NULL_AGE));
+
+    // Sort records with field "cm" of float type
+    testTopN("cm", 2, false, "tallest", ImmutableList.of(ALICE, BOB_NULL_AGE));
+  }
+
+  @Test
+  public void testFailOnNonExistField() throws Exception {
     // Non-existing topField should throw Eception
     try {
-      testTopN("nonExist", "4", "false", "nonExist", new ArrayList<StructuredRecord>());
+      testTopN("nonExist", 4, false, "nonExist", new ArrayList<StructuredRecord>());
       Assert.fail("Non-existing topField should throw IllegalStateException");
     } catch (IllegalStateException e) {
       // Expected to catch IllegalArgumentException because "nonExist" field does not exist
     }
+  }
 
-    // Sort records with field "id" of long type and skip null
-    testTopN("id", "4", "true", "largest", ImmutableList.of(ALICE, BOB_NULL_AGE, EVE, LEO));
-    // Sort records with field "kg" of double type and skip null
-    testTopN("kg", "4", "true", "heaviest", ImmutableList.of(ALICE, BOB_NULL_AGE, EVE, LEO));
-    // Sort records with field "cm" of float type and skip null
-    testTopN("cm", "4", "true", "tallest", ImmutableList.of(ALICE, BOB_NULL_AGE, EVE, LEO));
+  @Test
+  public void testFailOnNonNumericField() throws Exception {
+    // topField with non-numeric type is invalid
+    try {
+      testTopN("name", 4, false, "nonNumeric", new ArrayList<StructuredRecord>());
+      Assert.fail("topField with non-numeric type is not allowed and should throw IllegalStateException");
+    } catch (IllegalStateException e) {
+      // Expected to catch IllegalArgumentException because "name" field has String type
+    }
   }
 }
