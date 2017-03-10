@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.analytics.hydrator.plugin;
+package co.cask.plugin;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
@@ -23,6 +23,7 @@ import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.Engine;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
@@ -46,8 +47,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -75,6 +77,8 @@ public class TopNTest extends HydratorTestBase {
   private static final StructuredRecord ALICE = StructuredRecord.builder(SCHEMA).set("name", "Alice").set("id", 4L)
     .set("kg", 44.4).set("cm", 444.4f).set("age", 44).build();
   private static final List<StructuredRecord> INPUT = ImmutableList.of(LEO, EVE, BOB_NULL_AGE, ALICE);
+  private static final MockPipelineConfigurer MOCK_PIPELINE_CONFIGURER =
+    new MockPipelineConfigurer(SCHEMA, new HashMap<String, Object>());
 
   private static boolean inputDone = false;
 
@@ -84,9 +88,9 @@ public class TopNTest extends HydratorTestBase {
     // add TopN plugin
     addPluginArtifact(NamespaceId.DEFAULT.artifact("topn", "1.0.0"), APP_ARTIFACT_ID, TopN.class);
   }
-  
+
   private void testTopN(String topField, int topSize, boolean ignoreNull,
-                                String testName, List<StructuredRecord> expected) throws Exception {
+                        String testName, Set<StructuredRecord> expected) throws Exception {
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .setEngine(Engine.MAPREDUCE)
       .addStage(new ETLStage("input", MockSource.getPlugin(INPUT_TABLE, SCHEMA)))
@@ -118,46 +122,38 @@ public class TopNTest extends HydratorTestBase {
     DataSetManager<Table> sinkManager = getDataset(testName);
     List<StructuredRecord> actual = MockSink.readOutput(sinkManager);
     // Records from sink are out of order, so use Sets to compare
-    Assert.assertEquals(Sets.newHashSet(expected), Sets.newHashSet(actual));
+    Assert.assertEquals(expected, Sets.newHashSet(actual));
   }
 
   @Test
   public void testAllNumericFields() throws Exception {
     // Sort records with field "age" of int type and skip records with null value in field "age"
-    testTopN("age", 4, true, "skipNull", ImmutableList.of(ALICE, EVE, LEO));
+    testTopN("age", 4, true, "skipNull", Sets.newHashSet(ALICE, EVE, LEO));
 
     // Sort records with field "age" of int type and keep records with null value in field "age"
-    testTopN("age", 4, false, "keepNull", ImmutableList.of(ALICE, EVE, LEO, BOB_NULL_AGE));
+    testTopN("age", 4, false, "keepNull", Sets.newHashSet(ALICE, EVE, LEO, BOB_NULL_AGE));
 
     // Sort records with field "id" of long type
-    testTopN("id", 2, false, "largest", ImmutableList.of(ALICE, BOB_NULL_AGE));
+    testTopN("id", 2, false, "largest", Sets.newHashSet(ALICE, BOB_NULL_AGE));
 
     // Sort records with field "kg" of double type
-    testTopN("kg", 2, false, "heaviest", ImmutableList.of(ALICE, BOB_NULL_AGE));
+    testTopN("kg", 2, false, "heaviest", Sets.newHashSet(ALICE, BOB_NULL_AGE));
 
     // Sort records with field "cm" of float type
-    testTopN("cm", 2, false, "tallest", ImmutableList.of(ALICE, BOB_NULL_AGE));
+    testTopN("cm", 2, false, "tallest", Sets.newHashSet(ALICE, BOB_NULL_AGE));
   }
 
-  @Test
+  @Test(expected = IllegalArgumentException.class)
   public void testFailOnNonExistField() throws Exception {
-    // Non-existing topField should throw Eception
-    try {
-      testTopN("nonExist", 4, false, "nonExist", new ArrayList<StructuredRecord>());
-      Assert.fail("Non-existing topField should throw IllegalStateException");
-    } catch (IllegalStateException e) {
-      // Expected to catch IllegalArgumentException because "nonExist" field does not exist
-    }
+    TopN topN = new TopN(new TopNConfig("nonExist", 4, false));
+    // Non-existing topField should throw IllegalArgumentException
+    topN.configurePipeline(MOCK_PIPELINE_CONFIGURER);
   }
 
-  @Test
+  @Test(expected = IllegalArgumentException.class)
   public void testFailOnNonNumericField() throws Exception {
+    TopN topN = new TopN(new TopNConfig("name", 4, false));
     // topField with non-numeric type is invalid
-    try {
-      testTopN("name", 4, false, "nonNumeric", new ArrayList<StructuredRecord>());
-      Assert.fail("topField with non-numeric type is not allowed and should throw IllegalStateException");
-    } catch (IllegalStateException e) {
-      // Expected to catch IllegalArgumentException because "name" field has String type
-    }
+    topN.configurePipeline(MOCK_PIPELINE_CONFIGURER);
   }
 }

@@ -18,7 +18,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.analytics.plugins</groupId>
+  <groupId>co.cask.plugins</groupId>
   <artifactId>topn</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
@@ -45,7 +45,7 @@
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
     <!-- This is the list of packages where your codmve exists. You can add multiple and separated with a ; or use wildcards *. -->
-    <exported-packages>org.analytics.plugin*</exported-packages>
+    <exported-packages>co.cask.plugin.*</exported-packages>
   </properties>
 
   <repositories>
