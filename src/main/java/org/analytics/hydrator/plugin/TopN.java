@@ -39,10 +39,12 @@ import javax.annotation.Nullable;
  * Top N aggregator.
  */
 @Plugin(type = BatchAggregator.PLUGIN_TYPE)
-@Name("TopN")
+@Name(TopN.PLUGIN_NAME)
 @Description("Get the top N results sorted by the given field")
 public class TopN extends BatchAggregator<Boolean, StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(TopN.class);
+
+  public static final String PLUGIN_NAME = "TopN";
 
   private final TopNConfig conf;
   private String topField;
@@ -102,7 +104,6 @@ public class TopN extends BatchAggregator<Boolean, StructuredRecord, StructuredR
     LOG.debug("Constructing queue with size {}", topSize);
     enqueueRecord(firstVal, topRecords);
     while (iterator.hasNext()) {
-      // enqueue non-null
       enqueueRecord(iterator.next(), topRecords);
     }
 
@@ -231,15 +232,15 @@ public class TopN extends BatchAggregator<Boolean, StructuredRecord, StructuredR
      */
     @Override
     public int compare(StructuredRecord record1, StructuredRecord record2) {
-      T val1 = getRecordVal(record1);
-      // record1 is smaller than any record if val1 is null
-      if (val1 == null) {
-        return 1;
-      }
       // record2 is smaller than any record if val2 is null
       T val2 = getRecordVal(record2);
       if (val2 == null) {
         return -1;
+      }
+      T val1 = getRecordVal(record1);
+      // record1 is smaller than any record if val1 is null
+      if (val1 == null) {
+        return 1;
       }
       // Reverse the order of val1 and val2 when calling compareValues
       return compareValues(val2, val1);
