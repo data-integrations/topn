@@ -8,7 +8,7 @@
       "label": "Transform Configuration",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "input-field-selector",
           "label": "Top Field",
           "name": "topField",
           "description" : "The field by which top records are sorted"
