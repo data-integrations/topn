@@ -14,7 +14,7 @@
  * the License.
  */
 
-package org.analytics.hydrator.plugin;
+package co.cask.plugin;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
