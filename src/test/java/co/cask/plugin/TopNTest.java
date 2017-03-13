@@ -94,7 +94,7 @@ public class TopNTest extends HydratorTestBase {
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .setEngine(Engine.MAPREDUCE)
       .addStage(new ETLStage("input", MockSource.getPlugin(INPUT_TABLE, SCHEMA)))
-      .addStage(new ETLStage("topn", new ETLPlugin(TopN.PLUGIN_NAME, BatchAggregator.PLUGIN_TYPE,
+      .addStage(new ETLStage("topn", new ETLPlugin("TopN", BatchAggregator.PLUGIN_TYPE,
                                                    ImmutableMap.of("topField", topField,
                                                                    "topSize", Integer.toString(topSize),
                                                                    "ignoreNull", Boolean.toString(ignoreNull)),
@@ -145,14 +145,14 @@ public class TopNTest extends HydratorTestBase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testFailOnNonExistField() throws Exception {
-    TopN topN = new TopN(new TopNConfig("nonExist", 4, false));
+    TopN topN = new TopN(new TopNConfig("nonExist", "4", "false"));
     // Non-existing topField should throw IllegalArgumentException
     topN.configurePipeline(MOCK_PIPELINE_CONFIGURER);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testFailOnNonNumericField() throws Exception {
-    TopN topN = new TopN(new TopNConfig("name", 4, false));
+    TopN topN = new TopN(new TopNConfig("name", "4", "false"));
     // topField with non-numeric type is invalid
     topN.configurePipeline(MOCK_PIPELINE_CONFIGURER);
   }

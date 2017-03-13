@@ -5,25 +5,28 @@
   },
   "configuration-groups": [
     {
-      "label": "Transform Configuration",
+      "label": "Top-N Configuration",
       "properties": [
         {
           "widget-type": "input-field-selector",
           "label": "Top Field",
-          "name": "topField",
-          "description" : "The field by which top records are sorted"
+          "name": "field",
+          "description" : "The field by which top results are sorted on."
         },
         {
           "widget-type": "number",
           "label": "Results Number",
-          "name": "topSize",
-          "description" : "The maximum number of top records sorted by \"Top Field\" in result"
+          "name": "size",
+          "description" : "The maximum number of top records sorted by 'field' in result (DEFAULT: 1)",
+          "widget-attributes" : {
+            "default" : 1
+          }
         },
         {
           "widget-type": "select",
           "label": "Ignore NULL Field",
           "name": "ignoreNull",
-          "description": "Whether to ignore records with null in the field by which records are sorted. Defaults to \"false\" to treat null as smallest value.",
+          "description": "Set to 'true' to ignore records with null value in the field to sort by (DEFAULT : false)",
           "widget-attributes" : {
             "values": [
               "true",

@@ -1,51 +1,49 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Analytics Top-N Plugin
-===================
+# Top-N
 
-CDAP Plugin for getting top N records sorted by a given field.
+Top-N returns top records from the input set, based on the a criteria specified by a field.
 
-Use Case
---------
-This plugin takes input records and keeps a given number records with highest values in a given field. If the total number of records is smaller than the given number, output records will contain all records sorted by their values in the given field in a descending order.
 
-Properties
-----------
-**topField:** Name of the field by which top results are sorted. It must be an existing field from the input schema of type ``int``, ``long``, ``float``, or ``double``.
+## Plugin Properties
+Plugin Configuration
+---------------------
 
-**topSize:** Maximum number of records in the result. It must be a positive integer.
+| Config | Required | Default | Description |
+| :------------ | :------: | :----- | :---------- |
+| **Field** | **Y** | N/A | Input field that should be used for comparator. It has to be of type numeric (int, long, float and double).|
+| **Size** | **N** | 1 | Specifies the size of the top-N to be generated. If no of input records is less than N, then all records will ordered by the 'field' specified above.  |
+| **Null Field Value** | **N** | 'false' | Specifies the list of fields from the input that should be considered as hashing keys. All the fields should be non-null. Comma separated list of fields to be used as hash keys. |
 
-**ignoreNull:** Whether to ignore records with null in the field by which records are sorted. Defaults to 'false' to treat null as smallest value.
 
-Example
--------
-The plugin takes input records that have columns "name" and "age". Then it outputs top 3 records with largest age values without ignoring null values.
+## Usage Notes
 
-```
-{
-  "name": "TopN",
-  "type": "batchaggregator",
-  "properties": {
-     "topField": "age",
-     "topSize": "3",
-     "ignoreNull": "false"
-   }
-}
-```
+This plugin takes input records and keeps a given number records with highest values
+in a given field. If the total number of records is smaller than the given number,
+output records will contain all records sorted by their values in the given field in a
+descending order.
 
-For example, suppose the plugin receives input records:
+Let's describe how the plugin works with a simple example. Let's say the input records
+have columns "name" and "age". And you want to track top 3 names that are ordered by "age".
+without ignoring null values. So, the configuration for the plugin would specify
+
+* Field as 'age'
+* Size as '3'
+* Null Field Value as 'false'
+
+Now, following are the input records
 
 ```
     +================+
     | name   |  age  |
     +================+
-    | alice  |       |
+    | alice  |  NULL |
     | bob    |   1   |
     | dave   |   6   |
     +================+
 ```
 
-The output records will be:
+then applying the configuration, the output records will be:
 
 ```
     +================+
@@ -57,7 +55,7 @@ The output records will be:
     +================+
 ```
 
-If "ignoreNull" property is set to 'true' to ignore records with NULL values in age field, the output records will be:
+If Null Field Value is set to 'true' to ignore records with NULL values in "age" field, the output records will be:
 
 ```
     +================+
@@ -68,28 +66,28 @@ If "ignoreNull" property is set to 'true' to ignore records with NULL values in 
     +================+
 ```
 
-Build
------
+# Build
 To build this plugin:
 
 ```
+   git clone https://github.com/hydrator/topn.git
    mvn clean package
 ```    
 
 The build will create a .jar and .json file under the ``target`` directory.
 These files can be used to deploy your plugins.
 
-Deployment
-----------
+# Deployment
+
 You can deploy your plugins using the CDAP CLI:
 
-    > load artifact <target/plugin.jar> config-file <target/plugin.json>
+    > load artifact <target/topn-<version>.jar> config-file <target/topn-<version>.json>
 
-For example, if your artifact is named 'topn-1.0.0':
+For example, if your artifact is named 'topn-<version>':
 
-    > load artifact target/topn-1.0.0.jar config-file target/topn-1.0.0.json
+    > load artifact target/topn-<version>.jar config-file target/topn-<version>.json
     
-## Mailing Lists
+# Mailing Lists
 
 CDAP User Group and Development Discussions:
 
@@ -100,12 +98,12 @@ applications or building plugins for appplications. You can expect questions fro
 users, release announcements, and any other discussions that we think will be helpful 
 to the users.
 
-## IRC Channel
+# IRC Channel
 
 CDAP IRC Channel: #cdap on irc.freenode.net
 
 
-## License and Trademarks
+# License and Trademarks
 
 Copyright © 2017 Cask Data, Inc.
 
