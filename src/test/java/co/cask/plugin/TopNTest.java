@@ -89,14 +89,14 @@ public class TopNTest extends HydratorTestBase {
     addPluginArtifact(NamespaceId.DEFAULT.artifact("topn", "1.0.0"), APP_ARTIFACT_ID, TopN.class);
   }
 
-  private void testTopN(String topField, int topSize, boolean ignoreNull,
+  private void testTopN(String field, int size, boolean ignoreNull,
                         String testName, Set<StructuredRecord> expected) throws Exception {
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .setEngine(Engine.MAPREDUCE)
       .addStage(new ETLStage("input", MockSource.getPlugin(INPUT_TABLE, SCHEMA)))
       .addStage(new ETLStage("topn", new ETLPlugin("TopN", BatchAggregator.PLUGIN_TYPE,
-                                                   ImmutableMap.of("topField", topField,
-                                                                   "topSize", Integer.toString(topSize),
+                                                   ImmutableMap.of("field", field,
+                                                                   "size", Integer.toString(size),
                                                                    "ignoreNull", Boolean.toString(ignoreNull)),
                                                    null)))
       .addStage(new ETLStage("output", MockSink.getPlugin(testName)))
