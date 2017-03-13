@@ -40,7 +40,7 @@ public class TopNConfig extends PluginConfig {
   @Nullable
   private String size;
 
-  @Name("ignorenull")
+  @Name("ignoreNull")
   @Description("Set to 'true' to ignore records with null value in the field to sort by (DEFAULT : false)")
   @Macro
   @Nullable
