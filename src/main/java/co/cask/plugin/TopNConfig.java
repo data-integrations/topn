@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 public class TopNConfig extends PluginConfig {
 
   @Name("field")
-  @Description("The field by which top results are sorted on.")
+  @Description("The field which top results are sorted by.")
   @Macro
   private String field;
 

@@ -11,7 +11,7 @@
           "widget-type": "input-field-selector",
           "label": "Top Field",
           "name": "field",
-          "description" : "The field by which top results are sorted on."
+          "description" : "The field which top results are sorted by."
         },
         {
           "widget-type": "number",
@@ -24,7 +24,7 @@
         },
         {
           "widget-type": "select",
-          "label": "Ignore NULL Field",
+          "label": "Ignore NULL Value",
           "name": "ignoreNull",
           "description": "Set to 'true' to ignore records with null value in the field to sort by (DEFAULT : false)",
           "widget-attributes" : {
