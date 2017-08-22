@@ -2,66 +2,58 @@
 
 # Top-N
 
-Top-N returns top records from the input set, based on the a criteria specified by a field.
+Top-N returns the top "n" records from the input set, based on the criteria specified in the plugin configuration.
 
 
-## Plugin Properties
-Plugin Configuration
----------------------
+## Plugin Configuration
 
 | Config | Required | Default | Description |
 | :------------ | :------: | :----- | :---------- |
-| **Field** | **Y** | N/A | Input field that should be used for comparator. It has to be of type numeric (int, long, float and double).|
-| **Size** | **N** | 1 | Specifies the size of the top-N to be generated. If no of input records is less than N, then all records will ordered by the 'field' specified above.  |
-| **Null Field Value** | **N** | 'false' | Specifies the list of fields from the input that should be considered as hashing keys. All the fields should be non-null. Comma separated list of fields to be used as hash keys. |
+| **Top Field** | **Y** | n/a | Input field that should be used to compare records. It must be a numeric type (int, long, float, or double).|
+| **Results Number** | **N** | 1 | Specifies the size of the top-N to be generated. If the number of input records is less than N, then all records will be ordered by the `Top Field` specified above.  |
+| **Ignore NULL Value** | **N** | `false` | Whether to ignore records with a NULL value in the `Top Field`. Defaults to `false` to treat NULL as the smallest value. |
 
 
 ## Usage Notes
 
-This plugin takes input records and keeps a given number records with highest values
-in a given field. If the total number of records is smaller than the given number,
+This plugin takes input records and returns a specified number of records with the highest values
+in a given field. If the total number of input records is smaller than the specifed number,
 output records will contain all records sorted by their values in the given field in a
 descending order.
 
-Let's describe how the plugin works with a simple example. Let's say the input records
-have columns "name" and "age". And you want to track top 3 names that are ordered by "age".
-without ignoring null values. So, the configuration for the plugin would specify
+Here is how the plugin works with a simple example. Let's say the input records
+have two columns ("name" and "age") and you want to track the top three records, ordered by "age",
+without ignoring null values. The configuration for the plugin would specify:
 
-* Field as 'age'
-* Size as '3'
-* Null Field Value as 'false'
+* **Top Field** as `age`
+* **Results Number** as `3`
+* **Ignore NULL Value** as `false`
 
-Now, following are the input records
+If these are the input records:
 
-```
-    +================+
-    | name   |  age  |
-    +================+
-    | alice  |  NULL |
-    | bob    |   1   |
-    | dave   |   6   |
-    +================+
-```
+        +================+
+        | name   |  age  |
+        +================+
+        | alice  |  NULL |
+        | bob    |   1   |
+        | dave   |   6   |
+        +================+
 
-then applying the configuration, the output records will be:
+then after applying the configuration, the output records will be:
 
-```
-    +================+
-    | name   |  age  |
-    +================+
-    | dave   |   6   |
-    | bob    |   1   |
-    | alice  |       |
-    +================+
-```
+        +================+
+        | name   |  age  |
+        +================+
+        | dave   |   6   |
+        | bob    |   1   |
+        | alice  |  NULL |
+        +================+
 
-If Null Field Value is set to 'true' to ignore records with NULL values in "age" field, the output records will be:
+If the Null Field Value is set to `true` to ignore records with NULL values in the "age" field, the output records will be:
 
-```
-    +================+
-    | name   |  age  |
-    +================+
-    | dave   |   6   |
-    | bob    |   1   |
-    +================+
-```
+        +================+
+        | name   |  age  |
+        +================+
+        | dave   |   6   |
+        | bob    |   1   |
+        +================+
