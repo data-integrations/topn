@@ -26,7 +26,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <cdap.version>6.0.0-SNAPSHOT</cdap.version>
+    <cdap.version>6.1.0-SNAPSHOT</cdap.version>
     <hydrator.version>2.2.0-SNAPSHOT</hydrator.version>
     <guava.version>19.0</guava.version>
     <!-- properties for script build step that creates the config files for the artifacts -->
@@ -34,7 +34,7 @@
     <docs.dir>docs</docs.dir>
     <!-- This is the version range for the app.parents that this plugin is valid for. Usually this will correspond with
          the CDAP version, but not always. -->
-    <etl.versionRange>[6.0.0-SNAPSHOT,7.0.0-SNAPSHOT)</etl.versionRange>
+    <etl.versionRange>[6.1.0-SNAPSHOT,7.0.0-SNAPSHOT)</etl.versionRange>
     <!-- These are the application template artifacts that this plugin will be available for. -->
     <app.parents>
       system:cdap-data-pipeline,
@@ -43,7 +43,7 @@
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
     <!-- This is the list of packages where your codmve exists. You can add multiple and separated with a ; or use wildcards *. -->
-    <exported-packages>io.cdap.plugin.*</exported-packages>
+    <exported-packages>io.cdap.plugin.topn.*</exported-packages>
   </properties>
 
   <repositories>
@@ -109,8 +109,8 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.1</version>
           <configuration>
-            <source>1.7</source>
-            <target>1.7</target>
+            <source>1.8</source>
+            <target>1.8</target>
           </configuration>
         </plugin>
         <plugin>

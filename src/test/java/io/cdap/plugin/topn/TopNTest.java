@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.cdap.plugin;
+package io.cdap.plugin.topn;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -41,15 +41,16 @@ import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
 import io.cdap.cdap.test.WorkflowManager;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for TopN
@@ -140,19 +141,5 @@ public class TopNTest extends HydratorTestBase {
 
     // Sort records with field "cm" of float type
     testTopN("cm", 2, false, "tallest", Sets.newHashSet(ALICE, BOB_NULL_AGE));
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testFailOnNonExistField() throws Exception {
-    TopN topN = new TopN(new TopNConfig("nonExist", "4", "false"));
-    // Non-existing topField should throw IllegalArgumentException
-    topN.configurePipeline(MOCK_PIPELINE_CONFIGURER);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testFailOnNonNumericField() throws Exception {
-    TopN topN = new TopN(new TopNConfig("name", "4", "false"));
-    // topField with non-numeric type is invalid
-    topN.configurePipeline(MOCK_PIPELINE_CONFIGURER);
   }
 }
